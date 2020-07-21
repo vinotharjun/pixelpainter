@@ -10,7 +10,7 @@ class DALIDataloader(DALIGenericIterator):
         super().__init__(pipelines=pipeline,
                          size=size,
                          auto_reset=auto_reset,
-                         output_map=output_map)
+                         output_map=["input", "mask", "ground_truth"])
 
     def __next__(self):
         if self._first_batch is not None:
@@ -18,11 +18,10 @@ class DALIDataloader(DALIGenericIterator):
             self._first_batch = None
             return batch
         data = super().__next__()[0]
-        return {
-            "input": data["input"],
-            "mask": data["mask"],
-            "ground_truth": data["ground_truth"]
-        }
+        return [
+            data[self.output_map[0]], data[self.output_map[1]],
+            data[self.output_map[1]]
+        ]
 
     def __len__(self):
         if self.total % self.batch_size == 0:
@@ -78,8 +77,4 @@ class HybridTrainPipe(Pipeline):
         mask_array = self.mask_generator.sample(switcher=switch)
         mask_array = torch.from_array(mask_array).permute(2, 0, 1)
         input_image[mask_array == 0] = 0
-        return {
-            "input": input_image,
-            "mask": mask_array,
-            "ground_truth": output
-        }
+        return [input_image, mask_array, output]
