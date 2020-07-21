@@ -1,5 +1,4 @@
-import torch
-import numpy as np
+from painter import *
 
 
 def im_convert(tensor,

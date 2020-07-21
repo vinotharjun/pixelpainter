@@ -1,11 +1,5 @@
-import random
-import torchvision.transforms as transforms
-from torch.utils.data import Dataset
-from PIL import Image
-import numpy as np
 from .genmask import MaskGenerator
-import h5py
-import copy
+from painter import *
 
 
 class CustomDataset(Dataset):
