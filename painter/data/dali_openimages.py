@@ -4,12 +4,7 @@ from .genmask import MaskGenerator
 
 
 class DALIDataloader(DALIGenericIterator):
-    def __init__(self,
-                 pipeline,
-                 size,
-                 batch_size,
-                 auto_reset=True,
-                 onehot_label=False):
+    def __init__(self, pipeline, size, batch_size, auto_reset=True):
         self.size = size
         self.batch_size = batch_size
         super().__init__(pipelines=pipeline,
