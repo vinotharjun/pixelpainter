@@ -22,7 +22,7 @@ class OpenImages(Dataset):
                                             filepath=self.mask_path)
         self.mean = np.array([0.485, 0.456, 0.406])
         self.std = np.array([0.229, 0.224, 0.225])
-        self.image_transform = transforms.Compose([
+        self.image_transform = torchvision.transforms.Compose([
             transforms.Resize((self.hr_height, self.hr_height), Image.LANCZOS),
             transforms.ToTensor(),
             transforms.Normalize(self.mean, self.std)
