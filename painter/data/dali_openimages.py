@@ -53,6 +53,7 @@ class HybridTrainPipe(Pipeline):
         dali_device = "gpu"
         self.input = ops.FileReader(file_root=data_dir,
                                     shard_id=local_rank,
+                                    file_list=data_dir / "file_paths.txt",
                                     num_shards=world_size,
                                     random_shuffle=True)
         self.decode = ops.ImageDecoder(device="mixed", output_type=types.RGB)
