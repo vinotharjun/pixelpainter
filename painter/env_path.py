@@ -1,8 +1,11 @@
 from pathlib import Path
 
+import os
+
 
 def get_project_root() -> Path:
-    return Path(__file__).parent.parent.parent
+    return Path(
+        os.path.dirname(os.path.realpath("__file__")).rsplit(os.sep, 2)[0])
 
 
 SOURCE = get_project_root()

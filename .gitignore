@@ -1,5 +1,4 @@
 train_data.h5
-datasets
 storage/inpainting-dataset
 .vscode
 .ipynb_checkpoints
