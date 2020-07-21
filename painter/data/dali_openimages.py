@@ -5,7 +5,7 @@ from .genmask import MaskGenerator
 
 class DALIDataloader(DALIGenericIterator):
     def __init__(self, pipeline, size, batch_size, auto_reset=True):
-        self.size = size
+        self.total = size
         self.batch_size = batch_size
         super().__init__(pipelines=pipeline,
                          size=size,
@@ -25,10 +25,10 @@ class DALIDataloader(DALIGenericIterator):
         }
 
     def __len__(self):
-        if self.size % self.batch_size == 0:
-            return self.size // self.batch_size
+        if self.total % self.batch_size == 0:
+            return self.total // self.batch_size
         else:
-            return self.size // self.batch_size + 1
+            return self.total // self.batch_size + 1
 
 
 class HybridTrainPipe(Pipeline):
