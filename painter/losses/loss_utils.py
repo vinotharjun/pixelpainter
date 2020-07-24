@@ -1,13 +1,13 @@
 from painter.imports import *
 
 
-def gram_matrix(input_tensor):
+def gram_matrix(input_tensor: torch.tensor):
     b, c, h, w = input_tensor.size()
     x = input_tensor.view(b, c, -1)
     return torch.bmm(x, x.transpose(1, 2)) / (c * h * w)
 
 
-def children(m):
+def children(m: nn.Module):
     return list(m.children())
 
 

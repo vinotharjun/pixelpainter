@@ -3,7 +3,7 @@ from .blocks import *
 
 
 class PartialConvUNet(nn.Module):
-    def __init__(self, depth=8):
+    def __init__(self, depth: int = 8):
         super().__init__()
         self.depth = depth
         self.encoder1 = PartialConvEncoderBlock(in_channels=3,
@@ -100,13 +100,16 @@ class PartialConvUNet(nn.Module):
                                             stride=1,
                                             padding=1)
 
-    def crop_and_concat(self, upsampled, bypass, crop=False):
+    def crop_and_concat(self,
+                        upsampled: torch.tensor,
+                        bypass: torch.tensor,
+                        crop: bool = False):
         if crop:
             upsampled = F.interpolate(upsampled, size=bypass.shape[-2:])
 
         return torch.cat((upsampled, bypass), 1)
 
-    def forward(self, x, mask):
+    def forward(self, x: torch.tensor, mask: torch.tensor):
         encoder_dict = {}
         mask_dict = {}
 

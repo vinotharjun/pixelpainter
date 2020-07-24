@@ -50,14 +50,14 @@ class PixelShuffle_ICNR(nn.Module):
 #layer courtesy
 class PartialConvLayer(nn.Module):
     def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 dilation=1,
-                 groups=1,
-                 bias=True):
+                 in_channels: int,
+                 out_channels: int,
+                 kernel_size: int = 3,
+                 stride: Union[int, intTuple] = 1,
+                 padding: Union[int, intTuple] = 0,
+                 dilation: Union[int, intTuple] = 1,
+                 groups: Union[int, intTuple] = 1,
+                 bias: bool = True):
         super().__init__()
         self.input_conv = conv2d(in_channels, out_channels, kernel_size,
                                  stride, padding, dilation, groups, bias)
@@ -104,9 +104,9 @@ class PartialConvEncoderBlock(nn.Module):
     def __init__(self,
                  in_channels: int,
                  out_channels: int,
-                 kernel_size: int = 3,
-                 stride: int = 1,
-                 padding: int = 1,
+                 kernel_size: Union[int, intTuple] = 3,
+                 stride: Union[int, intTuple] = 1,
+                 padding: Union[int, intTuple] = 1,
                  activation: str = "relu",
                  batch_norm_enable: bool = True,
                  bias: bool = False):
@@ -139,9 +139,9 @@ class PartialConvDecoderBlock(nn.Module):
         self,
         in_channels: int,
         out_channels: int,
-        kernel_size: int = 3,
-        stride: int = 1,
-        padding: int = 1,
+        kernel_size: Union[int, intTuple] = 3,
+        stride: Union[int, intTuple] = 1,
+        padding: Union[int, intTuple] = 1,
         activation: str = "relu",
         batch_norm_enable: bool = True,
         blur: bool = False,
