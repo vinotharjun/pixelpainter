@@ -127,7 +127,7 @@ class PartialConvUNet(nn.Module):
 
         for i in reversed(range(1, self.depth + 1)):
             enc_h_key = str(i)
-            dec__key = 'decoder' + str(i)
+            dec_l_key = 'decoder' + str(i)
 
             outdata = self.crop_and_concat(outdata,
                                            encoder_dict[enc_h_key],
