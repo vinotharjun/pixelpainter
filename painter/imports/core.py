@@ -15,4 +15,5 @@ import time
 import random
 import collections
 from typing import *
+from fastprogress.fastprogress import master_bar, progress_bar
 intTuple = Tuple[int, int]

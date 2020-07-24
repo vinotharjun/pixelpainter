@@ -11,3 +11,4 @@ from torch.utils.data import BatchSampler, DataLoader, Dataset, Sampler, TensorD
 from torch.nn.utils import weight_norm, spectral_norm
 from torch.multiprocessing import Event
 from torch._six import queue
+from torch.optim import Adam, RMSprop, Adagrad, Adadelta

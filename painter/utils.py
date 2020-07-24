@@ -18,3 +18,9 @@ def im_convert(tensor,
 
 def minmax(tensor):
     return torch.max(tensor), torch.min(tensor)
+
+
+def getsample(loader):
+    a = iter(loader)
+    a = next(a)
+    return a
