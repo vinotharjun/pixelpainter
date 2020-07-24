@@ -92,8 +92,8 @@ class PartialConvUNet(nn.Module):
                                                 kernel_size=32,
                                                 stride=1,
                                                 padding=1,
-                                                batch_norm_enable=False,
-                                                activation=None)
+                                                batch_norm_enable=True,
+                                                activation="leaky")
         self.final_layer = PartialConvLayer(in_channels=32 + 3,
                                             out_channels=3,
                                             kernel_size=3,
@@ -127,7 +127,7 @@ class PartialConvUNet(nn.Module):
 
         for i in reversed(range(1, self.depth + 1)):
             enc_h_key = str(i)
-            dec_l_key = 'decoder' + str(i)
+            dec__key = 'decoder' + str(i)
 
             outdata = self.crop_and_concat(outdata,
                                            encoder_dict[enc_h_key],
