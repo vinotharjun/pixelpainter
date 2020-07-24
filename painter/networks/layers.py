@@ -1,4 +1,6 @@
-from painter.imports.torchpacks import *
+from painter import *
+from typing import *
+intTuple = Tuple[int, int]
 
 
 def weights_init(init_type='gaussian'):
@@ -24,51 +26,81 @@ def weights_init(init_type='gaussian'):
     return init_fun
 
 
-class PartialConv(nn.Module):
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 dilation=1,
-                 groups=1,
-                 bias=True):
-        super().__init__()
-        self.input_conv = nn.Conv2d(in_channels, out_channels, kernel_size,
-                                    stride, padding, dilation, groups, bias)
-        self.mask_conv = nn.Conv2d(in_channels, out_channels, kernel_size,
-                                   stride, padding, dilation, groups, False)
-        self.input_conv.apply(weights_init('kaiming'))
+def ifnone(a: Any, b: Any) -> Any:
+    return b if a is None else a
 
-        torch.nn.init.constant_(self.mask_conv.weight, 1.0)
 
-        # mask is not updated
-        for param in self.mask_conv.parameters():
-            param.requires_grad = False
+def init_default(m: nn.Conv2d,
+                 func: Callable = nn.init.kaiming_normal_) -> nn.Conv2d:
+    if func:
+        if hasattr(m, 'weight'):
+            func(m.weight)
+        if hasattr(m, 'bias') and hasattr(m.bias, 'data'):
+            m.bias.data.fill_(0.)
+    return m
 
-    def forward(self, input, mask):
-        # http://masc.cs.gmu.edu/wiki/partialconv
-        # C(X) = W^T * X + b, C(0) = b, D(M) = 1 * M + 0 = sum(M)
-        # W^T* (M .* X) / sum(M) + b = [C(M .* X) – C(0)] / D(M) + C(0)
 
-        output = self.input_conv(input * mask)
-        if self.input_conv.bias is not None:
-            output_bias = self.input_conv.bias.view(1, -1, 1,
-                                                    1).expand_as(output)
-        else:
-            output_bias = torch.zeros_like(output)
+def relu(inplace: bool = False, leaky: float = None) -> torch.nn.Module:
+    return nn.LeakyReLU(
+        inplace=inplace,
+        negative_slope=leaky) if leaky is not None else nn.ReLU(
+            inplace=inplace)
 
-        with torch.no_grad():
-            output_mask = self.mask_conv(mask)
 
-        no_update_holes = output_mask == 0
-        mask_sum = output_mask.masked_fill_(no_update_holes, 1.0)
+def conv2d(ni: int,
+           nf: int,
+           ks: Union[int, intTuple] = 3,
+           stride: Union[int, intTuple] = 1,
+           padding: Union[int, intTuple] = None,
+           dilation: Union[int, intTuple] = 1,
+           groups: int = 1,
+           bias: bool = False,
+           init: Callable = nn.init.kaiming_normal_) -> nn.Conv2d:
+    if padding is None:
+        padding = ks // 2
+    layer = nn.Conv2d(ni,
+                      nf,
+                      kernel_size=ks,
+                      stride=stride,
+                      padding=padding,
+                      dilation=dilation,
+                      groups=groups,
+                      bias=bias)
+    if init is None:
+        return layer
+    else:
+        return init_default(layer, init)
 
-        output_pre = (output - output_bias) / mask_sum + output_bias
-        output = output_pre.masked_fill_(no_update_holes, 0.0)
 
-        new_mask = torch.ones_like(output)
-        new_mask = new_mask.masked_fill_(no_update_holes, 0.0)
+def conv_layer(ni: int,
+               nf: int,
+               kernel_size: Union[int, intTuple] = 3,
+               stride: Union[int, intTuple] = 1,
+               padding: Union[int, intTuple] = None,
+               bias: bool = None,
+               use_batch_norm: bool = True,
+               use_activation: bool = True,
+               leaky: float = None,
+               init: Callable = nn.init.kaiming_normal_,
+               **kwargs):
 
-        return output, new_mask
+    if padding is None:
+        padding = (kernel_size - 1) // 2
+    # if we use batch norm ,bias term will be cancelled out even if we included
+    if bias is None:
+        bias = not use_batch_norm
+    conv_func = nn.Conv2d
+    conv = init_default(
+        conv_func(ni,
+                  nf,
+                  kernel_size=kernel_size,
+                  stride=stride,
+                  padding=padding), init)
+    if not use_batch_norm:
+        conv = nn.utils.weight_norm(conv)
+    layers = [conv]
+    if use_activation:
+        layers.append(relu(True, leaky))
+    if use_batch_norm:
+        layers.append(nn.BatchNorm2d(nf))
+    return nn.Sequential(*layers)

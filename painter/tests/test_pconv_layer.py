@@ -1,17 +1,17 @@
-from ..networks.layers import *
+from ..networks.blocks import *
 
 
 class LayerTestModel(nn.Module):
     def __init__(self):
         super(LayerTestModel, self).__init__()
-        self.layer1 = PartialConv(3, 3, kernel_size=(3, 3), stride=1)
-        self.layer2 = PartialConv(3, 8, kernel_size=(3, 3), stride=1)
-        self.layer3 = PartialConv(8, 16, kernel_size=(3, 3), stride=1)
-        self.layer4 = PartialConv(16, 32, kernel_size=(3, 3), stride=1)
-        self.layer5 = PartialConv(32, 32, kernel_size=(3, 3), stride=1)
-        self.layer6 = PartialConv(32, 32, kernel_size=(3, 3), stride=1)
-        self.layer7 = PartialConv(32, 32, kernel_size=(3, 3), stride=1)
-        self.layer8 = PartialConv(32, 32, kernel_size=(3, 3), stride=1)
+        self.layer1 = PartialConvLayer(3, 3, kernel_size=(3, 3), stride=1)
+        self.layer2 = PartialConvLayer(3, 8, kernel_size=(3, 3), stride=1)
+        self.layer3 = PartialConvLayer(8, 16, kernel_size=(3, 3), stride=1)
+        self.layer4 = PartialConvLayer(16, 32, kernel_size=(3, 3), stride=1)
+        self.layer5 = PartialConvLayer(32, 32, kernel_size=(3, 3), stride=1)
+        self.layer6 = PartialConvLayer(32, 32, kernel_size=(3, 3), stride=1)
+        self.layer7 = PartialConvLayer(32, 32, kernel_size=(3, 3), stride=1)
+        self.layer8 = PartialConvLayer(32, 32, kernel_size=(3, 3), stride=1)
 
     def forward(self, image, mask):
         image, mask1 = self.layer1(image, mask)

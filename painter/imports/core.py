@@ -13,3 +13,5 @@ import time
 import time
 import random
 import collections
+from typing import *
+intTuple = Tuple[int, int]
