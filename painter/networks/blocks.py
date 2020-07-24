@@ -177,3 +177,30 @@ class PartialConvDecoderBlock(nn.Module):
         out = self.upsample_layer(out)
         out_mask = F.interpolate(out_mask, scale_factor=2, mode='nearest')
         return out, out_mask
+
+
+class SequentialEx(nn.Module):
+    def __init__(self, *layers):
+        self.layers = nn.ModuleList(layers)
+
+    def forward(self, x):
+        res = x
+        for l in self.layers:
+            res.orig = x
+            nres = l(res)
+            # We have to remove res.orig to avoid hanging refs and therefore memory leaks
+            res.orig = None
+            res = nres
+        return res
+
+    def __getitem__(self, i):
+        return self.layers[i]
+
+    def append(self, l):
+        return self.layers.append(l)
+
+    def extend(self, l):
+        return self.layers.extend(l)
+
+    def insert(self, i, l):
+        return self.layers.insert(i, l)
