@@ -3,6 +3,7 @@ import numpy as np
 import h5py
 import copy
 import os
+import matplotlib.pyplot as plt
 from random import randint, seed, shuffle
 import itertools
 import threading

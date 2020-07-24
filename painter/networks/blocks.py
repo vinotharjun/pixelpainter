@@ -73,14 +73,10 @@ class PartialConvLayer(nn.Module):
 
         torch.nn.init.constant_(self.mask_conv.weight, 1.0)
 
-        # mask is not updated
         for param in self.mask_conv.parameters():
             param.requires_grad = False
 
     def forward(self, input: torch.tensor, mask: torch.tensor) -> torch.tensor:
-        # http://masc.cs.gmu.edu/wiki/partialconv
-        # C(X) = W^T * X + b, C(0) = b, D(M) = 1 * M + 0 = sum(M)
-        # W^T* (M .* X) / sum(M) + b = [C(M .* X) – C(0)] / D(M) + C(0)
 
         output = self.input_conv(input * mask)
         if self.input_conv.bias is not None:
@@ -104,54 +100,80 @@ class PartialConvLayer(nn.Module):
         return output, new_mask
 
 
-class PartialConvBlock(nn.Module):
+class PartialConvEncoderBlock(nn.Module):
     def __init__(self,
-                 in_ch,
-                 out_ch,
-                 bn=True,
-                 sample='none-3',
-                 activ='relu',
-                 conv_bias=False):
+                 in_channels: int,
+                 out_channels: int,
+                 kernel_size: int = 3,
+                 stride: int = 1,
+                 padding: int = 1,
+                 activation: str = "relu",
+                 batch_norm_enable: bool = True,
+                 bias: bool = False):
         super().__init__()
-        if sample == 'down-5':
-            self.conv = PartialConvLayer(in_ch,
-                                         out_ch,
-                                         kernel_size=5,
-                                         stride=2,
-                                         padding=2,
-                                         bias=conv_bias)
-        elif sample == 'down-7':
-            self.conv = PartialConvLayer(in_ch,
-                                         out_ch,
-                                         kernel_size=7,
-                                         stride=2,
-                                         padding=3,
-                                         bias=conv_bias)
-        elif sample == 'down-3':
-            self.conv = PartialConvLayer(in_ch,
-                                         out_ch,
-                                         kernel_size=3,
-                                         stride=2,
-                                         padding=1,
-                                         bias=conv_bias)
-        else:
-            self.conv = PartialConvLayer(in_ch,
-                                         out_ch,
-                                         kernel_size=3,
-                                         stride=1,
-                                         padding=1,
-                                         bias=conv_bias)
-        if bn:
-            self.bn = nn.BatchNorm2d(out_ch)
-        if activ == 'relu':
-            self.activation = nn.ReLU()
-        elif activ == 'leaky':
+        self.batch_norm_enable = batch_norm_enable
+        self.conv = PartialConvLayer(in_channels=in_channels,
+                                     out_channels=out_channels,
+                                     kernel_size=kernel_size,
+                                     stride=stride,
+                                     padding=padding,
+                                     bias=bias)
+        if batch_norm_enable:
+            self.batch_norm = nn.BatchNorm2d(out_channels)
+        if activation == 'leaky':
             self.activation = nn.LeakyReLU(negative_slope=0.2)
+        elif activation == "relu":
+            self.activation = nn.ReLU()
 
-    def forward(self, input, input_mask):
-        h, h_mask = self.conv(input, input_mask)
-        if hasattr(self, 'bn'):
-            h = self.bn(h)
-        if hasattr(self, 'activation'):
-            h = self.activation(h)
-        return h, h_mask
+    def forward(self, input_tensor, input_mask):
+        out, out_mask = self.conv(input_tensor, input_mask)
+        if self.batch_norm_enable:
+            out = self.batch_norm(out)
+        if self.activation:
+            out = self.activation(out)
+        return out, out_mask
+
+
+class PartialConvDecoderBlock(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int = 3,
+        stride: int = 1,
+        padding: int = 1,
+        activation: str = "relu",
+        batch_norm_enable: bool = True,
+        blur: bool = False,
+        bias: bool = False,
+    ):
+        super().__init__()
+        self.batch_norm_enable = batch_norm_enable
+        self.blur = blur
+        self.activation = activation
+        self.conv = PartialConvLayer(in_channels=in_channels,
+                                     out_channels=out_channels,
+                                     kernel_size=kernel_size,
+                                     stride=stride,
+                                     padding=padding,
+                                     bias=bias)
+        if batch_norm_enable:
+            self.batch_norm = nn.BatchNorm2d(out_channels)
+        if activation == 'leaky':
+            self.activation = nn.LeakyReLU(negative_slope=0.2)
+        elif activation == "relu":
+            self.activation = nn.ReLU()
+        self.upsample_layer = PixelShuffle_ICNR(out_channels,
+                                                out_channels,
+                                                scale=2,
+                                                blur=self.blur)
+
+    def forward(self, input_tensor, input_mask):
+        out, out_mask = self.conv(input_tensor, input_mask)
+        if self.batch_norm_enable:
+            out = self.batch_norm(out)
+        if self.activation:
+            out = self.activation(out)
+        out = self.upsample_layer(out)
+        out_mask = F.interpolate(out_mask, scale_factor=2, mode='nearest')
+        return out, out_mask

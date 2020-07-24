@@ -2,89 +2,10 @@ from .layers import *
 from .blocks import *
 
 
-class PartialConvEncoderBlock(nn.Module):
-    def __init__(self,
-                 in_channels: int,
-                 out_channels: int,
-                 kernel_size: int = 3,
-                 stride: int = 1,
-                 padding: int = 1,
-                 activation: str = "relu",
-                 batch_norm_enable: bool = True,
-                 bias: bool = False):
-        super().__init__()
-        self.batch_norm_enable = batch_norm_enable
-        self.conv = PartialConvLayer(in_channels=in_channels,
-                                     out_channels=out_channels,
-                                     kernel_size=kernel_size,
-                                     stride=stride,
-                                     padding=padding,
-                                     bias=bias)
-        if batch_norm_enable:
-            self.batch_norm = nn.BatchNorm2d(out_channels)
-        if activation == 'leaky':
-            self.activation = nn.LeakyReLU(negative_slope=0.2)
-        elif activation == "relu":
-            self.activation = nn.ReLU()
-
-    def forward(self, input_tensor, input_mask):
-        out, out_mask = self.conv(input_tensor, input_mask)
-        if self.batch_norm_enable:
-            out = self.batch_norm(out)
-        if self.activation:
-            out = self.activation(out)
-        return out, out_mask
-
-
-class PartialConvDecoderBlock(nn.Module):
-    def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        kernel_size: int = 3,
-        stride: int = 1,
-        padding: int = 1,
-        activation: str = "relu",
-        batch_norm_enable: bool = True,
-        blur: bool = False,
-        bias: bool = False,
-    ):
-        super().__init__()
-        self.batch_norm_enable = batch_norm_enable
-        self.blur = blur
-        self.activation = activation
-        self.conv = PartialConvLayer(in_channels=in_channels,
-                                     out_channels=out_channels,
-                                     kernel_size=kernel_size,
-                                     stride=stride,
-                                     padding=padding,
-                                     bias=bias)
-        if batch_norm_enable:
-            self.batch_norm = nn.BatchNorm2d(out_channels)
-        if activation == 'leaky':
-            self.activation = nn.LeakyReLU(negative_slope=0.2)
-        elif activation == "relu":
-            self.activation = nn.ReLU()
-        self.upsample_layer = PixelShuffle_ICNR(out_channels,
-                                                out_channels,
-                                                scale=2,
-                                                blur=self.blur)
-
-    def forward(self, input_tensor, input_mask):
-        out, out_mask = self.conv(input_tensor, input_mask)
-        if self.batch_norm_enable:
-            out = self.batch_norm(out)
-        if self.activation:
-            out = self.activation(out)
-        out = self.upsample_layer(out)
-        out_mask = F.interpolate(out_mask, scale_factor=2, mode='nearest')
-        return out, out_mask
-
-
 class PartialConvUNet(nn.Module):
     def __init__(self, depth=8):
         super().__init__()
-        self.depth = 8
+        self.depth = depth
         self.encoder1 = PartialConvEncoderBlock(in_channels=3,
                                                 out_channels=64,
                                                 kernel_size=7,
@@ -114,7 +35,7 @@ class PartialConvUNet(nn.Module):
                                                 batch_norm_enable=True,
                                                 activation="relu")
         for i in range(5, depth + 1):
-            name = "encoder{:d}".format(i)
+            name = "encoder" + str(i)
             setattr(
                 self, name,
                 PartialConvEncoderBlock(in_channels=512,
@@ -127,7 +48,7 @@ class PartialConvUNet(nn.Module):
         self.bottleneck = PartialConvDecoderBlock(512, 512, 3, 1, 1)
 
         for i in reversed(range(5, depth + 1)):
-            name = 'decoder{:d}'.format(i)
+            name = 'decoder' + str(i)
             setattr(
                 self, name,
                 PartialConvDecoderBlock(
@@ -214,7 +135,6 @@ class PartialConvUNet(nn.Module):
             outmask = self.crop_and_concat(outmask,
                                            mask_dict[enc_h_key],
                                            crop=True)
-            print(outdata.shape, outmask.shape, enc_h_key, dec_l_key)
             outdata, outmask = getattr(self, dec_l_key)(outdata, outmask)
         outdata, outmask = self.crop_and_concat(
             outdata, encoder_dict["0"],
