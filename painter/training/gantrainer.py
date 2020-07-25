@@ -4,11 +4,13 @@ from painter import *
 class UNetTrainer():
     def __init__(self,
                  generator,
+                 discriminator,
                  train_loader,
                  validation_loader,
                  loss,
                  load: bool = False):
         self.generator = generator
+        self.descrminator = discriminator
         self.device = device
         self.train_loader = train_loader
         self.validation_loader = validation_loader
@@ -19,6 +21,10 @@ class UNetTrainer():
 
 #         self.validation_loader = validation_loader
         self.optimizer_G = torch.optim.Adam(self.generator.parameters(),
+                                            lr=1e-4,
+                                            betas=(0., 0.99))
+
+        self.optimizer_D = torch.optim.Adam(self.descrminator.parameters(),
                                             lr=1e-4,
                                             betas=(0., 0.99))
 
@@ -47,7 +53,7 @@ class UNetTrainer():
 
             generated = self.generator(lr_imgs)
             content_loss = self.feat_loss(generated, hr_imgs)
-
+            #ragan loss
             score_real = self.discriminator(hr_imgs)
             score_fake = self.discriminator(generated)
             discriminator_rf = score_real - score_fake.mean()
@@ -57,7 +63,7 @@ class UNetTrainer():
             adversarial_loss_fr = self.adv_loss(
                 discriminator_fr, torch.ones_like(discriminator_fr))
             adversarial_loss = (adversarial_loss_fr + adversarial_loss_rf) / 2
-
+            #ragan loss end
             perceptual_loss = content_loss + self.beta * adversarial_loss
             self.optimizer_G.zero_grad()
             perceptual_loss.backward()
