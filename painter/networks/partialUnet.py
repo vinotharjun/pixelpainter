@@ -1,11 +1,13 @@
+import sys
 from .layers import *
 from .blocks import *
 
 
 class PartialConvUNet(nn.Module):
-    def __init__(self, depth: int = 8):
+    def __init__(self, depth: int = 8, blur: bool = True):
         super().__init__()
         self.depth = depth
+        self.blur = blur
         self.encoder1 = PartialConvEncoderBlock(in_channels=3,
                                                 out_channels=64,
                                                 kernel_size=7,
@@ -51,49 +53,46 @@ class PartialConvUNet(nn.Module):
             name = 'decoder' + str(i)
             setattr(
                 self, name,
-                PartialConvDecoderBlock(
-                    in_channels=512 + 512,
-                    out_channels=512,
-                    kernel_size=3,
-                    stride=1,
-                    padding=1,
-                    batch_norm_enable=True,
-                    activation="leaky",
-                ))
-        self.decoder4 = PartialConvDecoderBlock(
-            in_channels=512 + 512,
-            out_channels=256,
-            kernel_size=3,
-            stride=1,
-            padding=1,
-            batch_norm_enable=True,
-            activation="leaky",
-        )
-        self.decoder3 = PartialConvDecoderBlock(
-            in_channels=256 + 256,
-            out_channels=128,
-            kernel_size=3,
-            stride=1,
-            padding=1,
-            batch_norm_enable=True,
-            activation="leaky",
-        )
-        self.decoder2 = PartialConvDecoderBlock(
-            in_channels=128 + 128,
-            out_channels=64,
-            kernel_size=3,
-            stride=1,
-            padding=1,
-            batch_norm_enable=True,
-            activation="leaky",
-        )
+                PartialConvDecoderBlock(in_channels=512 + 512,
+                                        out_channels=512,
+                                        kernel_size=3,
+                                        stride=1,
+                                        padding=1,
+                                        batch_norm_enable=True,
+                                        activation="leaky",
+                                        blur=self.blur))
+        self.decoder4 = PartialConvDecoderBlock(in_channels=512 + 512,
+                                                out_channels=256,
+                                                kernel_size=3,
+                                                stride=1,
+                                                padding=1,
+                                                batch_norm_enable=True,
+                                                activation="leaky",
+                                                blur=self.blur)
+        self.decoder3 = PartialConvDecoderBlock(in_channels=256 + 256,
+                                                out_channels=128,
+                                                kernel_size=3,
+                                                stride=1,
+                                                padding=1,
+                                                batch_norm_enable=True,
+                                                activation="leaky",
+                                                blur=self.blur)
+        self.decoder2 = PartialConvDecoderBlock(in_channels=128 + 128,
+                                                out_channels=64,
+                                                kernel_size=3,
+                                                stride=1,
+                                                padding=1,
+                                                batch_norm_enable=True,
+                                                activation="leaky",
+                                                blur=self.blur)
         self.decoder1 = PartialConvDecoderBlock(in_channels=64 + 64,
                                                 out_channels=32,
                                                 kernel_size=32,
                                                 stride=1,
                                                 padding=1,
                                                 batch_norm_enable=True,
-                                                activation="leaky")
+                                                activation="leaky",
+                                                blur=self.blur)
         self.final_layer = PartialConvLayer(in_channels=32 + 3,
                                             out_channels=3,
                                             kernel_size=3,

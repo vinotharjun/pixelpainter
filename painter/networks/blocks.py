@@ -175,7 +175,7 @@ class PartialConvDecoderBlock(nn.Module):
         if self.activation:
             out = self.activation(out)
         out = self.upsample_layer(out)
-        out_mask = F.interpolate(out_mask, scale_factor=2, mode='nearest')
+        ou_maskt = F.interpolate(out_mask, size=out.shape[-2:])
         return out, out_mask
 
 

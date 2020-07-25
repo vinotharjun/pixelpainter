@@ -25,16 +25,17 @@ def overfit_on_single_batch(batched_data, model, criterion, optimizer):
 if __name__ == "__main__":
 
     print("loading model")
+    # model = PartialConvUNet().to(device)
     model = PartialConvUNet().to(device)
     print("loading loss")
     criterion = PartialConvFeatureLoss().to(device)
     print("loading optimizer")
     optimizer = Adam(model.parameters(), lr=2e-4)
     print("loading dataset")
-    dataset = OpenImages((128, 128), datatype="validation")
+    dataset = OpenImages((256, 256), datatype="validation")
     print("loading dataloaedr")
     data_loader = DataLoader(dataset,
-                             batch_size=16,
+                             batch_size=8,
                              num_workers=4,
                              pin_memory=True)
     print("getsample")
