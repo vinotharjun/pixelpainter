@@ -1,5 +1,6 @@
 from painter import *
 from typing import *
+from painter.utils import *
 intTuple = Tuple[int, int]
 
 
@@ -24,10 +25,6 @@ def weights_init(init_type='gaussian'):
                 nn.init.constant_(m.bias, 0.0)
 
     return init_fun
-
-
-def ifnone(a: Any, b: Any) -> Any:
-    return b if a is None else a
 
 
 def init_default(m: nn.Conv2d,
