@@ -69,9 +69,11 @@ class Trainer():
             input_image = imgs["input"].to(device)
             input_mask = imgs["mask"].to(device)
             target = imgs["ground_truth"].to(device)
-
+            self.optimizer_G.zero_grad()
             generated, _ = self.generator(input_image, input_mask)
             loss = self.criterion(input_image, input_mask, generated, target)
+            loss.backward()
+            self.optimizer_G.step()
             # psnr_value = validate(target,generated)
             # psnr_train.update(psnr_value)
 
