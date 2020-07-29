@@ -29,7 +29,7 @@ class Trainer():
             )
         self.optimizer_G = torch.optim.Adam(self.generator.parameters(),
                                             lr=learning_rate,
-                                            betas=(0.9, 0.99))
+                                            betas=(0.9, 0.999))
 
     def save_checkpoint(self, save_folder: str=None,isbest=False,model_filename="model.pth",optimizer_filename="optimizer.pth"):
         if isbest:
