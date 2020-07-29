@@ -7,7 +7,9 @@ class OpenImages(Dataset):
                  hr_shape,
                  datatype="train",
                  dataset_path=IMAGES_PATH,
-                 mask_path=MASKS_PATH):
+                 mask_path=MASKS_PATH,
+                 load_mask=True,
+                 normalize=True):
         super(OpenImages, self).__init__()
         self.hr_height, self.hr_width = hr_shape
         self.mask_path = mask_path / datatype
@@ -15,18 +17,27 @@ class OpenImages(Dataset):
         self.files = [
             self.dataset_path / i for i in os.listdir(self.dataset_path)
         ]
-
+        self.load_mask= load_mask
         self.mask_generator = MaskGenerator(height=self.hr_height,
                                             width=self.hr_width,
                                             channels=3,
-                                            filepath=self.mask_path)
+                                            filepath=self.mask_path,from_file=self.load_mask)
         self.mean = np.array([0.485, 0.456, 0.406])
         self.std = np.array([0.229, 0.224, 0.225])
-        self.image_transform = torchvision.transforms.Compose([
+        if normalize:
+            self.mean = np.array([0.485, 0.456, 0.406])
+            self.std = np.array([0.229, 0.224, 0.225])
+            self.image_transform = torchvision.transforms.Compose([
+                transforms.Resize((self.hr_height, self.hr_height), Image.LANCZOS),
+                transforms.ToTensor(),
+                transforms.Normalize(self.mean, self.std)
+            ])
+        else:
+            self.image_transform = torchvision.transforms.Compose([
             transforms.Resize((self.hr_height, self.hr_height), Image.LANCZOS),
-            transforms.ToTensor(),
-            transforms.Normalize(self.mean, self.std)
-        ])
+            transforms.ToTensor()
+            ])
+
         self.mask_transform = transforms.Compose([
             transforms.ToTensor()
             # transforms.Normalize(self.mean, self.std)
@@ -39,7 +50,10 @@ class OpenImages(Dataset):
             (self.hr_height, self.hr_width))
 
         image_array = np.array(img).astype(np.uint8)
-        switch = bool(random.getrandbits(1))
+        if self.load_mask:
+            switch = bool(random.getrandbits(1))
+        else:
+            switch = True
         mask_array = self.mask_generator.sample(switcher=switch)
 
         input_array = image_array * mask_array

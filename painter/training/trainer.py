@@ -1,6 +1,9 @@
 from painter import *
 from painter.utils import *
 import datetime
+import wandb
+
+
 
 class Trainer():
     def __init__(self,
@@ -9,9 +12,10 @@ class Trainer():
                  validation_loader: Iterable,
                  criterion: Callable,
                  load: bool = False,
-                 load_folder: Any[str] = None,
+                 load_folder:str = None,
+                 normalize=False,
                  learning_rate=2e-4):
-
+        self.normalize = normalize
         self.device = device
         self.generator = generator.to(self.device)
         self.train_loader = train_loader
@@ -27,28 +31,28 @@ class Trainer():
                                             lr=learning_rate,
                                             betas=(0.9, 0.99))
 
-    def save_checkpoint(self, save_folder:Any[str]=None,isbest=False,model_filename="model.pth",optimizer_filename="optimizer.pth"):
+    def save_checkpoint(self, save_folder: str=None,isbest=False,model_filename="model.pth",optimizer_filename="optimizer.pth"):
         if isbest:
-            if not os.path.exists("best_model") and save_folder=None:
+            if not os.path.exists("best_model") and save_folder==None:
                 os.mkdir("best_model")
                 save_folder="best_model"
             model_filename= save_folder+"/"+model_filename
             optimizer_filename = save_folder+"/"+optimizer_filename
         else:
-            if not os.path.exists(save_folder):
-                save_folder=datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+            if save_folder==None:
+                save_folder=datetime.datetime.now().strftime('%Y-%m-%d_%H')
                 os.mkdir(save_folder)
             model_filename= save_folder+"/"+model_filename
             optimizer_filename = save_folder+"/"+optimizer_filename
 
         torch.save(self.generator.state_dict(),model_filename)
-        torch.save(self.optimizer_G.state.dict(),optimizer_filename)
+        torch.save(self.optimizer_G.state_dict(),optimizer_filename)
 
     def load_checkpoint(self, load_folder):
         self.generator.load_state_dict(torch.load(load_folder))
         self.optimizer_G.load_state_dict(torch.load(load_folder))
 
-    def train(self, save_file, epoch, b=0, eb=-1, interval_verbose=100):
+    def train(self,epoch, b=0, eb=-1, interval_verbose=100):
 
         self.generator.train()
 
@@ -58,9 +62,10 @@ class Trainer():
         sample = getsample(self.validation_loader)
 
         for i, imgs in enumerate(self.train_loader):
+            print(i)
             if i <= b and epoch == eb:
                 continue
-            input_image = imgs["input_image"].to(device)
+            input_image = imgs["input"].to(device)
             input_mask = imgs["mask"].to(device)
             target = imgs["ground_truth"].to(device)
 
@@ -75,18 +80,20 @@ class Trainer():
                 with torch.no_grad():
                     self.save_checkpoint()
                     self.generator.eval()
-                    preds,_ = self.generator(sample["input"].to(device),sample["mask"].)
+                    preds,_ = self.generator(sample["input"].to(device),sample["mask"].to(device))
+                    if self.normalize==False:
+                        preds.clamp_(0,1)
                     print(
                         "Epoch:{} [{}/{}] content loss :{}"
                         .format(epoch, i, len(self.train_loader), losses_train.avg))
                     losses_train.reset()
                     wandb.log({
                         "input":
-                        save_result(sample["input"], denormalize=True),
+                        save_result(sample["input"], denormalize=self.normalize),
                         "output":
-                        save_result(preds, denormalize=True),
+                        save_result(preds, denormalize=self.normalize),
                         "ground_truth":
-                        save_result(d["ground_truth"], denormalize=True)
+                        save_result(sample["ground_truth"], denormalize=self.normalize)
                     })
                     self.generator.train()
             del input_image, input_mask, generated,target
@@ -100,7 +107,7 @@ class Trainer():
 
         with torch.no_grad():
             for i, imgs in enumerate(self.validation_loader):
-                input_image = imgs["input_image"].to(device)
+                input_image = imgs["input"].to(device)
                 input_mask = imgs["mask"].to(device)
                 target = imgs["ground_truth"].to(device)
                 generated, _ = self.generator(input_image, input_mask)
@@ -111,13 +118,13 @@ class Trainer():
 
         return losses_total_validation.avg,psnr_validation.avg
 
-    def train_model(self, start=0, end=100, b=0,val_loss_best=1e9):
+    def train_model(self, start=0, end=100, b=0,eb=-1,val_loss_best=1e9,interval_verbose=100):
         for epoch in range(start, end):
             if epoch == start:
                 b = b
             else:
                 b = 0
-            train_loss = self.train(epoch=epoch, b=b, eb=start)
+            train_loss = self.train(epoch=epoch, b=b, eb=eb,interval_verbose=interval_verbose)
             val_loss,psnr_validation = self.validate()
             print("Epoch:",epoch)
             print("Train Loss :",train_loss)

@@ -6,6 +6,7 @@ class MaskGenerator():
                  height,
                  width,
                  channels=3,
+                 from_file=True,
                  rand_seed=None,
                  filepath=None):
         self.height = height
@@ -15,7 +16,7 @@ class MaskGenerator():
 
         # If filepath supplied, load the list of masks within the directory
         self.mask_files = []
-        if self.filepath:
+        if self.filepath and from_file:
             filenames = [f for f in os.listdir(self.filepath)]
             self.mask_files = [
                 f for f in filenames
