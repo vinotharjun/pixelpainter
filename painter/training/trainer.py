@@ -27,11 +27,22 @@ class Trainer():
                                             lr=learning_rate,
                                             betas=(0.9, 0.99))
 
-    def save_checkpoint(self, save_folder:Any[str]=None):
-        if not os.path.exists(save_folder):
-            os.mkdir(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-        torch.save(self.generator.state_dict(), save_folder/"model.pth")
-        torch.save(self.optimizer_G.state.dict(),save_folder/"optimizer.pth")
+    def save_checkpoint(self, save_folder:Any[str]=None,isbest=False,model_filename="model.pth",optimizer_filename="optimizer.pth"):
+        if isbest:
+            if not os.path.exists("best_model") and save_folder=None:
+                os.mkdir("best_model")
+                save_folder="best_model"
+            model_filename= save_folder+"/"+model_filename
+            optimizer_filename = save_folder+"/"+optimizer_filename
+        else:
+            if not os.path.exists(save_folder):
+                save_folder=datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+                os.mkdir(save_folder)
+            model_filename= save_folder+"/"+model_filename
+            optimizer_filename = save_folder+"/"+optimizer_filename
+
+        torch.save(self.generator.state_dict(),model_filename)
+        torch.save(self.optimizer_G.state.dict(),optimizer_filename)
 
     def load_checkpoint(self, load_folder):
         self.generator.load_state_dict(torch.load(load_folder))
@@ -41,11 +52,10 @@ class Trainer():
 
         self.generator.train()
 
-        losses_train = AverageMeter()  # content loss
-        losses_valiation = AverageMeter()  # adversarial loss in the generator
+        losses_train = AverageMeter() 
         losses_total_train = AverageMeter()
-        psnr_train = AverageMeter()
-        psnr_validation = AverageMeter()
+        # psnr_train = AverageMeter()
+        sample = getsample(self.validation_loader)
 
         for i, imgs in enumerate(self.train_loader):
             if i <= b and epoch == eb:
@@ -56,40 +66,73 @@ class Trainer():
 
             generated, _ = self.generator(input_image, input_mask)
             loss = self.criterion(input_image, input_mask, generated, target)
+            # psnr_value = validate(target,generated)
+            # psnr_train.update(psnr_value)
 
+            losses_train.update(loss.item(), target.size(0))
             losses_total_train.update(loss.item(), target.size(0))
             if i % interval_verbose == 0:
                 with torch.no_grad():
-                    save_file = ifnone(self.load)
                     self.save_checkpoint()
                     self.generator.eval()
-                    sample = getsample(self.validation_loader)
-                    preds = self.generator(sample["input"].to(device),sample["mask"].)
+                    preds,_ = self.generator(sample["input"].to(device),sample["mask"].)
                     print(
-                        "Epoch:{} [{}/{}] content loss :{} advloss:{} discLoss:{}"
-                        .format(epoch, i, len(dataloader), losses_c.avg,
-                                losses_a.avg, losses_d.avg))
-                    losses_c.reset()
-                    losses_a.reset()
-                    losses_d.reset()
+                        "Epoch:{} [{}/{}] content loss :{}"
+                        .format(epoch, i, len(self.train_loader), losses_train.avg))
+                    losses_train.reset()
                     wandb.log({
                         "input":
-                        save_result(d[0], denormalize=True),
+                        save_result(sample["input"], denormalize=True),
                         "output":
                         save_result(preds, denormalize=True),
                         "ground_truth":
-                        save_result(d[1], denormalize=True)
+                        save_result(d["ground_truth"], denormalize=True)
                     })
                     self.generator.train()
-            del lr_imgs, hr_imgs, generated, score_real, score_fake
+            del input_image, input_mask, generated,target
+        return losses_total_train.avg
 
-    def train_model(self, start=0, end=100, b=0, eb=-1):
+    def validate(self):
+
+        self.generator.eval()
+        losses_total_validation = AverageMeter()
+        psnr_validation = AverageMeter()
+
+        with torch.no_grad():
+            for i, imgs in enumerate(self.validation_loader):
+                input_image = imgs["input_image"].to(device)
+                input_mask = imgs["mask"].to(device)
+                target = imgs["ground_truth"].to(device)
+                generated, _ = self.generator(input_image, input_mask)
+                loss = self.criterion(input_image, input_mask, generated, target)
+                losses_total_validation.update(loss.item(), target.size(0))
+                psnr_value = validate(generated,target)
+                psnr_validation.update(psnr_value)
+
+        return losses_total_validation.avg,psnr_validation.avg
+
+    def train_model(self, start=0, end=100, b=0,val_loss_best=1e9):
         for epoch in range(start, end):
             if epoch == start:
                 b = b
             else:
                 b = 0
-            self.train(epoch=epoch, b=b, eb=eb)
+            train_loss = self.train(epoch=epoch, b=b, eb=start)
+            val_loss,psnr_validation = self.validate()
+            print("Epoch:",epoch)
+            print("Train Loss :",train_loss)
+            print("Validation Loss :",val_loss)
+            print("PSNR :",psnr__validation)
+            wandb.log({
+                "train_loss_final":train_loss,
+                "psnr":psnr_validation,
+                "val_loss_final":val_loss,
+            })
+            if val_loss < val_loss_best:
+                print("saving best content based model")
+                self.save_checkpoint(isbest=True)
+                val_loss_best = val_loss
+
 
 
 # #train mse

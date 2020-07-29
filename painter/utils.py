@@ -70,6 +70,14 @@ def save_result(arr, denormalize=False):
         ret.append(wandb.Image(im))
     return ret
 
+def to_snake_case(string):
+    """Converts CamelCase string into snake_case."""
+    
+    s = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', string)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s).lower()
+
+def classname(obj):
+    return obj.__class__.__name__
 
 class AverageMeter(object):
     def __init__(self):
