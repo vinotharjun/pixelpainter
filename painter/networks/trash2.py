@@ -275,7 +275,7 @@ class CalculateLoss(nn.Module):
 		loss_dict["valid"] = self.l1(mask * output, mask * ground_truth) * LAMBDAS["valid"]
 		loss_dict["perceptual"] = perceptual_loss(fs_composed_output, fs_output, fs_ground_truth, self.l1) * LAMBDAS["perceptual"]
 		loss_dict["style"] = style_loss(fs_composed_output, fs_output, fs_ground_truth, self.l1) * LAMBDAS["style"]
-		loss_dict["tv"] = total_variation_loss(composed_output, self.l1) * LAMBDAS["tv"]
+		# loss_dict["tv"] = total_variation_loss(composed_output, self.l1) * LAMBDAS["tv"]
 
 		return sum(loss_dict.values())
 
