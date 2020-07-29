@@ -63,7 +63,6 @@ class Trainer():
         sample = getsample(self.validation_loader)
 
         for i, imgs in enumerate(self.train_loader):
-            print(i)
             if i <= b and epoch == eb:
                 continue
             input_image = imgs["input"].to(device)

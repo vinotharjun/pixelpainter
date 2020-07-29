@@ -163,10 +163,10 @@ class PartialConvDecoderBlock(nn.Module):
             self.activation = nn.LeakyReLU(negative_slope=0.2)
         elif activation == "relu":
             self.activation = nn.ReLU()
-        self.upsample_layer = PixelShuffle_ICNR(out_channels,
-                                                out_channels,
-                                                scale=2,
-                                                blur=self.blur)
+        # self.upsample_layer = PixelShuffle_ICNR(out_channels,
+        #                                         out_channels,
+        #                                         scale=2,
+        #                                         blur=self.blur)
 
     def forward(self, input_tensor, input_mask):
         out, out_mask = self.conv(input_tensor, input_mask)
@@ -174,8 +174,9 @@ class PartialConvDecoderBlock(nn.Module):
             out = self.batch_norm(out)
         if self.activation:
             out = self.activation(out)
-        out = self.upsample_layer(out)
-        ou_maskt = F.interpolate(out_mask, size=out.shape[-2:])
+        # out = self.upsample_layer(out)
+        out = F.interpolate(out, scale_factor=2)
+        ou_mask = F.interpolate(out_mask, size=out.shape[-2:])
         return out, out_mask
 
 
