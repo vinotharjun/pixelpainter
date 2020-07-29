@@ -172,7 +172,7 @@ class PartialConvUNet(nn.Module):
 			# feed through decoder layers
 			out_data, out_mask = getattr(self, decoder_key)(out_data, out_mask)
 
-		return out_data
+		return out_data,None
 
 	def train(self, mode=True):
 		super().train(mode)
