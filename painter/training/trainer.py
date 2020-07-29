@@ -41,7 +41,8 @@ class Trainer():
         else:
             if save_folder==None:
                 save_folder=datetime.datetime.now().strftime('%Y-%m-%d_%H')
-                os.mkdir(save_folder)
+                if not os.path.exists(save_folder):
+                    os.mkdir(save_folder)
             model_filename= save_folder+"/"+model_filename
             optimizer_filename = save_folder+"/"+optimizer_filename
 
