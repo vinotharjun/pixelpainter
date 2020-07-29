@@ -179,6 +179,7 @@ class PConvUNet(nn.Module):
             h = torch.cat([h, h_dict[enc_h_key]], dim=1)
             h_mask = torch.cat([h_mask, h_mask_dict[enc_h_key]], dim=1)
             h, h_mask = getattr(self, dec_l_key)(h, h_mask)
+        h+=input
 
         return h, h_mask
 
