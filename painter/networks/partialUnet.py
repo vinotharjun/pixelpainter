@@ -87,7 +87,7 @@ class PartialConvUNet(nn.Module):
                                                 blur=self.blur)
         self.decoder1 = PartialConvDecoderBlock(in_channels=64 + 64,
                                                 out_channels=32,
-                                                kernel_size=32,
+                                                kernel_size=3,
                                                 stride=1,
                                                 padding=1,
                                                 batch_norm_enable=True,
@@ -138,6 +138,7 @@ class PartialConvUNet(nn.Module):
                                            mask_dict[enc_h_key],
                                            crop=True)
             outdata, outmask = getattr(self, dec_l_key)(outdata, outmask)
+    
         outdata, outmask = self.crop_and_concat(
             outdata, encoder_dict["0"],
             crop=True), self.crop_and_concat(outmask,
