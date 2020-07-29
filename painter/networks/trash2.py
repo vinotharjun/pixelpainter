@@ -189,7 +189,7 @@ import numpy as np
 
 from torchvision import models
 from torchvision import transforms
-from places2_train import Places2Data, MEAN, STDDEV
+
 from PIL import Image
 
 LAMBDAS = {"valid": 1.0, "hole": 6.0, "tv": 2.0, "perceptual": 0.05, "style": 240.0}
