@@ -4,7 +4,7 @@ from .blocks import *
 
 
 class PartialConvUNet(nn.Module):
-    def __init__(self, depth: int = 8, blur: bool = True):
+    def __init__(self, depth: int = 8, blur: bool = False):
         super().__init__()
         self.depth = depth
         self.blur = blur
